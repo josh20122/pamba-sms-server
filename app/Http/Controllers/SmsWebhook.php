@@ -13,42 +13,27 @@ class SmsWebhook extends Controller
 {
   public function register(Request $request)
   {
-    if (!$request->data) {
-      abort(401, 'No data provided');
-    }
+    $smsData = $request->getContent();
 
-    $receivedData = $request->data;
+    $sms = explode(',', $smsData);
 
-    if (substr($receivedData, -1) != '}') {
-      $receivedData .= '}';
-    }
-
-    $sms = json_decode($receivedData);
 
     try {
       $saveThis = [
-        'firstname' => $sms->firstname,
-        'lastname' => $sms->lastname,
-        'phone_number' => $sms->phone_number,
-        'gender' => $sms->gender,
-        'age' => $sms->age,
-
-        'region' => $sms->region,
-        'district' => $sms->district,
-        'ward' => $sms->ward,
-        'village' => $sms->village,
-        'sub_village' => $sms->sub_village,
-        'amcos' => $sms->amcos,
-        'amcos_physical_location' => $sms->amcos_physical_location,
-
-        'collector_name' => $sms->collector_name,
-        'collector_phone_number' => $sms->collector_phone_number,
-        'wheight' => $sms->wheight,
-        'price_per_kg' => $sms->price_per_kg,
+        'firstname' => $sms[0],
+        'lastname' => $sms[1],
+        'phone_number' => $sms[2],
+        'gender' => $sms[3],
+        'age' => $sms[4],
+        'village' => $sms[5],
+        'sub_village' => $sms[6],
+        'collector_name' => $sms[7],
+        'collector_phone_number' => $sms[8],
+        'wheight' => $sms[9],
+        'price_per_kg' => $sms[10],
       ];
     } catch (\Exception $e) {
-      dump($e);
-      return response('Invalid data', 401);
+      return response('Unauthorized', 401);
     }
 
 
@@ -57,7 +42,7 @@ class SmsWebhook extends Controller
 
     $message = $this->getDynamicNotificationMessageAttribute($sms);
 
-    AfricasTalkingHelper::sendMessage($sms->phone_number, $message, true);
+    AfricasTalkingHelper::sendMessage($sms[2], $message, true);
 
     return response('Sweet success');
   }
@@ -68,19 +53,19 @@ class SmsWebhook extends Controller
 
     $message = Message::query()->where('action', 'like', 'sms-notification')->first()->message;
     if (strpos($message, '[firstname]') !== false) {
-      $message = str_replace("[firstname]", $sms->firstname, $message);
+      $message = str_replace("[firstname]", $sms[0], $message);
     }
     if (strpos($message, '[lastname]') !== false) {
-      $message = str_replace("[lastname]", $sms->lastname, $message);
+      $message = str_replace("[lastname]", $sms[1], $message);
     }
     if (strpos($message, '[wheight]') !== false) {
-      $message = str_replace("[wheight]", $sms->wheight, $message);
+      $message = str_replace("[wheight]", $sms[9], $message);
     }
     if (strpos($message, '[priceperkg]') !== false) {
-      $message = str_replace("[priceperkg]", $sms->price_per_kg, $message);
+      $message = str_replace("[priceperkg]", $sms[10], $message);
     }
     if (strpos($message, '[totalprice]') !== false) {
-      $message = str_replace("[totalprice]", intval($sms->totalprice) * intval($sms->price_per_kg), $message);
+      $message = str_replace("[totalprice]", intval($sms[9]) * intval($sms[10]), $message);
     }
 
     return $message;
