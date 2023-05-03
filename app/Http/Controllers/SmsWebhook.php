@@ -13,13 +13,17 @@ class SmsWebhook extends Controller
 {
   public function register(Request $request)
   {
-    $string = $request->getContent();
-    $decodedString = urldecode($string);
-    $sms = json_decode(substr($decodedString, 5));
-
-    if ($string == null) {
+    if (!$request->data) {
       abort(401, 'No data provided');
     }
+
+    $receivedData = $request->data;
+
+    if (substr($receivedData, -1) != '}') {
+      $receivedData .= '}';
+    }
+
+    $sms = json_decode($receivedData);
 
     try {
       $saveThis = [
@@ -43,7 +47,8 @@ class SmsWebhook extends Controller
         'price_per_kg' => $sms->price_per_kg,
       ];
     } catch (\Exception $e) {
-      return response('Unauthorized', 401);
+      dump($e);
+      return response('Invalid data', 401);
     }
 
 
